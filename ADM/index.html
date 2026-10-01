@@ -266,7 +266,6 @@ body:not(.dark) .edst{background:linear-gradient(#ffffff,#e3f6fe)}
         <button class="btn sm" id="jumpBtn">⏭ Pular</button>
       </div>
       <div class="row" style="margin-top:10px"><button class="btn sm" id="admRes">📺 Mostrar resultados agora</button><button class="btn w sm" id="admReplay">🔁 Repetir resultado atual</button></div>
-      <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="cfgAutoNext" style="width:auto"> Depois de assistir, ir sozinho para o próximo vídeo (na ordem)</label>
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cfgRank" style="width:auto"> 🏆 Mostrar o ranking no final</label>
       <div class="muted">O jogo começa quando todos os jogadores clicam em "Começar". O botão "Começar jogo" aqui força o início.</div>
     </div>
@@ -452,30 +451,31 @@ setInterval(()=>{ const upd={}; Object.entries(room.players||{}).forEach(([id,p]
 let emptySince=0;
 setInterval(()=>{ const st=room.state||'lobby'; if(st==='lobby'||plist().length){ emptySince=0; return; } if(!emptySince){ emptySince=Date.now(); return; }
   if(Date.now()-emptySince>6000){ emptySince=0; roomRef.set({state:'lobby',resOrder:null}).then(()=>savedPop('Partida vazia encerrada — lobby limpo')); } },2000);
-const STATE_TXT={lobby:'🟢 Lobby',play:'🎙 Gravando',results:'📺 Resultados',final:'🏆 Ranking'};
+const STATE_TXT={lobby:'🟢 Lobby',starting:'⏳ Começando',play:'🎙 Gravando',results:'📺 Resultados',judge:'⚖️ Juiz votando',verdict:'🏆 Veredito do juiz',final:'🏆 Ranking'};
 function start(){
   $('login').style.display='none'; $('panel').style.display='';
   roomRef.on('value',s=>{
     room=s.val()||{}; const st=room.state||'lobby', ps=plist();
     $('admState').textContent=STATE_TXT[st]+((room.rounds||1)>1&&st!=='lobby'?` • Meme ${(room.round||0)+1}/${room.rounds}`:'');
-    $('admInfo').textContent=(st==='results'?`Mostrando ${(room.resIdx||0)+1} de ${ps.length}`:`${ps.length} jogador(es) no lobby`)+' • ▲▼ define a ordem dos vídeos nos resultados';
-    $('admPlayers').innerHTML=resList().map((p,k)=>`<div class="rank"><span class="mv" title="Ordem em que os vídeos aparecem nos resultados"><b style="color:var(--c2)">${k+1}º</b> <button class="btn w sm" onclick="mvRes('${p.id}',-1)">▲</button><button class="btn w sm" onclick="mvRes('${p.id}',1)">▼</button></span><div class="avatar" style="${p.photo?`background-image:url(${p.photo})`:''}">${p.photo?'':esc((p.name||'?')[0])}</div><b style="flex:1">${esc(p.name)}</b>${st==='lobby'?(p.ready?'<span class="tag ok">pronto</span>':'<span class="tag">esperando</span>'):''}${st==='play'?(p.done?`<span class="tag ok">Pronto ${p.score}%</span>`:'<span class="tag">gravando...</span>'):(p.score!=null?`<span class="tag">${p.score}%</span>`:'')}<button class="btn r sm" onclick="kick('${p.id}')">✕</button></div>`).join('')||'<div class="muted" style="padding:10px">Ninguém no lobby ainda.</div>';
+    const JP=room.judge?ps.find(p=>p.id===room.judge):null;
+    $('admInfo').textContent=(st==='results'?`Mostrando ${(room.resIdx||0)+1} de ${resList().length}`:`${resList().length} jogador(es) no lobby`)+(JP?` • ⚖️ Juiz: ${JP.name}`:'')+' • ▲▼ define a ordem dos vídeos nos resultados';
+    $('admPlayers').innerHTML=resList().map((p,k)=>`<div class="rank"><span class="mv" title="Ordem em que os vídeos aparecem nos resultados"><b style="color:var(--c2)">${k+1}º</b> <button class="btn w sm" onclick="mvRes('${p.id}',-1)">▲</button><button class="btn w sm" onclick="mvRes('${p.id}',1)">▼</button></span><div class="avatar" style="${p.photo?`background-image:url(${p.photo})`:''}">${p.photo?'':esc((p.name||'?')[0])}</div><b style="flex:1">${esc(p.name)}</b>${st==='lobby'?(p.ready?'<span class="tag ok">pronto</span>':'<span class="tag">esperando</span>'):''}${st==='play'?(p.done?`<span class="tag ok">Pronto ${p.score}%</span>`:'<span class="tag">gravando...</span>'):(p.score!=null?`<span class="tag">${p.score}%</span>`:'')}<button class="btn r sm" onclick="kick('${p.id}')">✕</button></div>`).join('')+(JP?`<div class="rank" style="border:2px solid #f5a623"><span class="mv"><b style="color:#c27c0e">⚖️ Juiz</b></span><div class="avatar" style="${JP.photo?`background-image:url(${JP.photo})`:''}">${JP.photo?'':esc((JP.name||'?')[0])}</div><b style="flex:1">${esc(JP.name)}</b>${st==='lobby'?(JP.ready?'<span class="tag ok">pronto</span>':'<span class="tag">esperando</span>'):''}<button class="btn r sm" onclick="kick('${JP.id}')">✕</button></div>`:'')||'<div class="muted" style="padding:10px">Ninguém no lobby ainda.</div>';
     $('admStart').disabled=st!=='lobby'; $('jumpBtn').disabled=st!=='play';
-    { const sel=$('jumpWho'), cur=sel.value; sel.innerHTML='<option value="">todos</option>'+ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''); sel.value=ps.some(p=>p.id===cur)?cur:''; } $('admNext').disabled=st!=='results'; $('admFinal').disabled=st!=='results'; $('admRes').disabled=st!=='play'; $('admReplay').disabled=st!=='results';
+    { const sel=$('jumpWho'), cur=sel.value; sel.innerHTML='<option value="">todos</option>'+ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''); sel.value=ps.some(p=>p.id===cur)?cur:''; } $('admNext').disabled=!['results','judge','verdict'].includes(st); $('admFinal').disabled=st!=='results'; $('admRes').disabled=st!=='play'; $('admReplay').disabled=st!=='results';
   });
   db.ref('settings').on('value',async s=>{
     settings=s.val()||{};
     $('cfgSame').value=settings.same||'same'; if(document.activeElement!==$('cfgVol')) $('cfgVol').value=settings.vol??.4; $('volTxt').textContent=Math.round(($('cfgVol').value)*100)+'%';
-    $('cfgProj').value=settings.projId||''; $('cfgKbps').value=String(settings.recKbps||48); $('cfgDebug').checked=!!settings.debug; $('cfgAutoNext').checked=settings.autoNext!==false; $('cfgRank').checked=settings.showRanking!==false; $('cfgLobby').value=settings.lobbyStyle||'mii'; if(document.activeElement!==$('cfgMin')) $('cfgMin').value=settings.minPlayers||1;
+    $('cfgProj').value=settings.projId||''; $('cfgKbps').value=String(settings.recKbps||48); $('cfgDebug').checked=!!settings.debug; $('cfgRank').checked=settings.showRanking!==false; $('cfgLobby').value=settings.lobbyStyle||'mii'; if(document.activeElement!==$('cfgMin')) $('cfgMin').value=settings.minPlayers||1;
     if(settings.musicId){ const m=(await db.ref('media/'+settings.musicId+'/meta').get()).val(); $('musicName').textContent='🎵 '+(m?.name||'música'); loadMedia(settings.musicId).then(x=>{$('musicPrev').src=x.url;$('musicPrev').style.display='';}); }
     else { $('musicName').textContent='Nenhuma'; $('musicPrev').style.display='none'; }
     renderPlaylist();
   });
   db.ref('projects').on('value',s=>{ projects=s.val()||{}; renderProjList(); });
 }
-function wipeUpd(ids){ const upd={}; ids.forEach(id=>{ upd['players/'+id]=null; upd['recs/'+id]=null; Object.keys(room.watchReady||{}).forEach(k=>upd[`watchReady/${k}/${id}`]=null); }); if(room.resOrder) upd.resOrder=(room.resOrder||[]).filter(x=>!ids.includes(x)); return upd; }
+function wipeUpd(ids){ const upd={}; ids.forEach(id=>{ upd['players/'+id]=null; upd['recs/'+id]=null; if(room.judge===id) upd.judge=null; Object.keys(room.watchReady||{}).forEach(k=>upd[`watchReady/${k}/${id}`]=null); }); if(room.resOrder) upd.resOrder=(room.resOrder||[]).filter(x=>!ids.includes(x)); return upd; }
 window.kick=id=>roomRef.update(wipeUpd([id])).then(()=>toast('Jogador removido (dados apagados)'));
-const resList=()=>{ const ps=plist(), ord=room.resOrder||[]; return [...ord.map(id=>ps.find(p=>p.id===id)).filter(Boolean),...ps.filter(p=>!ord.includes(p.id))]; };
+const resList=()=>{ const ps=plist().filter(p=>p.id!==room.judge), ord=room.resOrder||[]; return [...ord.map(id=>ps.find(p=>p.id===id)).filter(Boolean),...ps.filter(p=>!ord.includes(p.id))]; };
 window.mvRes=(id,d)=>{ const a=resList().map(p=>p.id), i=a.indexOf(id), j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; roomRef.child('resOrder').set(a); };
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 // embaralha os clipes sem deixar "em ordem": nunca começa pelo 1º clipe e evita vizinhos em sequência (1→2, 2→3...)
@@ -488,13 +488,12 @@ $('admStart').onclick=()=>{ if(!plist().length)return toast('Ninguém no lobby')
 $('jumpBtn').onclick=()=>{ const n=Math.max(1,+$('jumpN').value||1); roomRef.child('jump').set({clip:n-1,who:$('jumpWho').value||null,t:Date.now()}).then(()=>toast(`⏭ Pulando para o clipe ${n}`)); };
 $('admRes').onclick=()=>roomRef.update({state:'results',resIdx:0,resAt:now()+2500});
 $('admReplay').onclick=()=>roomRef.update({resAt:now()+2000});
-$('admNext').onclick=()=>{ const n=plist().length, i=room.resIdx||0; if(i<n-1) roomRef.update({resIdx:i+1,resAt:now()+2000,watch:null}); else roomRef.child('endRound').set(true); };
+$('admNext').onclick=()=>{ const n=resList().length, i=room.resIdx||0; if(room.state==='results'&&i<n-1) roomRef.update({resIdx:i+1,resAt:now()+2000,watch:null}); else roomRef.child('endRound').set(true); };
 $('admFinal').onclick=()=>roomRef.update({state:'final',rounds:1,round:0});
-$('admLobby').onclick=()=>{ const upd={state:'lobby',recs:null,arch:null,resIdx:null,resAt:null,watch:null,watchReady:null,nextReady:null,endRound:null,jump:null,round:null,rounds:null}; plist().forEach(p=>['done','score','partScores','recBytes','ready'].forEach(k=>upd['players/'+p.id+'/'+k]=null)); roomRef.update(upd); };
+$('admLobby').onclick=()=>{ const upd={state:'lobby',recs:null,arch:null,resIdx:null,resAt:null,watch:null,watchReady:null,nextReady:null,endRound:null,jump:null,round:null,rounds:null,vote:null}; plist().forEach(p=>['done','score','partScores','recBytes','ready','clip','hist','order','proj','ld','vok','rn','rc'].forEach(k=>upd['players/'+p.id+'/'+k]=null)); roomRef.update(upd); };
 $('cfgMin').onchange=e=>db.ref('settings/minPlayers').set(Math.max(1,+e.target.value||1)).then(()=>toast('✔ Aplicado'));
 $('cfgLobby').onchange=e=>db.ref('settings/lobbyStyle').set(e.target.value).then(()=>toast('Lobby atualizado!'));
 $('cfgRank').onchange=e=>db.ref('settings/showRanking').set(e.target.checked).then(()=>toast(e.target.checked?'🏆 Ranking ligado':'Ranking desligado'));
-$('cfgAutoNext').onchange=e=>db.ref('settings/autoNext').set(e.target.checked);
 $('admClear').onclick=()=>{ if(confirm('Expulsar todos e apagar todos os dados dos jogadores?')) roomRef.set({state:'lobby'}).then(()=>{ toast('🧹 Lobby limpo'); if(window.calcUsage)calcUsage(); }); };
 
 /* ---------- Configurações ---------- */
