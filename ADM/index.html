@@ -11,6 +11,8 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="/trava.js" data-site="dublagem-party" data-modo="adm"></script>
 <style>
 :root{--c:#34bdf0;--c2:#0a8fd1;--ink:#4a5563;--card:#ffffffee;--ok:#5ccf5c;--bad:#f06565}
 *{box-sizing:border-box}
@@ -392,18 +394,12 @@ body:not(.dark) .edst{background:linear-gradient(#ffffff,#e3f6fe)}
 <div id="dirtyBar" class="dirtybar"><span>⚠ Você tem alterações <b>não salvas</b> no editor</span><button class="btn g sm" id="dirtySave">💾 Salvar agora</button></div>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyABXDT5J278kZixh12i88ROrMNhNyXhCNs",
-  authDomain: "dub-b3a78.firebaseapp.com",
-  databaseURL: "https://dub-b3a78-default-rtdb.firebaseio.com",
-  projectId: "dub-b3a78",
-  storageBucket: "dub-b3a78.firebasestorage.app",
-  messagingSenderId: "898560045967",
-  appId: "1:898560045967:web:11c34244631fa2082d11fa"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database(), $=id=>document.getElementById(id);
+// FIREBASE ÚNICO (jogos-github) pela TRAVA: a configuração vem do /trava.js e tudo deste jogo fica em sites/dublagem-party/...
+if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+const _raizDb = firebase.database(), _baseDb = window.DB_ROOT || 'sites/dublagem-party';
+const _db = { ref: (p) => (!p || String(p).startsWith('.info')) ? _raizDb.ref(p) : _raizDb.ref(_baseDb + '/' + p) };
+// ADM: grava com a conta da Central (a trava só abre esta página para ela)
+const db=_db, $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=t=>{ if(/^[✔💾🧹🎵🏆⏭▶]|salv|Aplicad|Adicionad|removid|limpo/i.test(t)) return savedPop(t.replace(/^[✔💾]\s*/,'')); const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2800)};
 function savedPop(t,err){ const p=$('savePop'); $('savePopTxt').textContent=t||'Salvo!'; p.querySelector('.ic').textContent=err?'!':'✔'; p.classList.toggle('err',!!err); p.classList.add('on'); clearTimeout(p._t); p._t=setTimeout(()=>p.classList.remove('on'),2200); }
