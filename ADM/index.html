@@ -41,6 +41,8 @@ label{font-weight:800;font-size:14px;display:block;margin:10px 0 4px}
 .tag.ok{background:var(--ok);color:#fff}
 .muted{color:#9aa6b2;font-size:13px}
 .rank{display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:8px 14px;margin:6px 0;box-shadow:0 3px 0 #d3dce5}
+#admPlayers.many .rank{padding:4px 12px;margin:4px 0;gap:10px}
+#admPlayers.many .avatar{width:36px;height:36px;border-width:2px}
 .avatar{width:46px;height:46px;border-radius:50%;background:#e8eef3 center/cover;border:3px solid #fff;box-shadow:0 3px 0 #cfd8e1;display:grid;place-items:center;font-weight:900;flex:none}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#fff;padding:12px 22px;border-radius:99px;box-shadow:0 4px 20px #0002;font-weight:900;z-index:60;display:none}
 .drop{border:4px dashed #b9dff2;border-radius:24px;padding:40px;text-align:center;font-weight:900;font-size:20px;color:var(--c2);background:#f3fbff;cursor:pointer;transition:.2s}
@@ -284,8 +286,8 @@ body:not(.dark) .edst{background:linear-gradient(#ffffff,#e3f6fe)}
       <audio id="musicPrev" controls style="width:100%;margin-top:8px;display:none"></audio>
       <label>Volume da música: <span id="volTxt"></span></label><input id="cfgVol" type="range" min="0" max="1" step="0.05" style="padding:0">
       <label>Mínimo de jogadores para começar</label>
-      <input type="number" id="cfgMin" min="1" max="20" value="1" style="max-width:120px">
-      <div class="muted">Com 2, o jogo só começa quando tiver 2 pessoas no lobby e todas clicarem em "Começar".</div>
+      <input type="number" id="cfgMin" min="1" max="8" value="1" style="max-width:120px">
+      <div class="muted">Com 2, o jogo só começa quando tiver 2 pessoas no lobby e todas clicarem em "Começar". A sala aceita até 8 pessoas (o juiz conta).</div>
       <label>Estilo do lobby</label>
       <select id="cfgLobby"><option value="mii">🧍 Bonequinhos andando (estilo Mii)</option><option value="cards">🃏 Cartões (normal)</option></select>
       <label>Qualidade das gravações dos jogadores</label>
@@ -405,6 +407,7 @@ const toast=t=>{ if(/^[✔💾🧹🎵🏆⏭▶]|salv|Aplicad|Adicionad|removid
 function savedPop(t,err){ const p=$('savePop'); $('savePopTxt').textContent=t||'Salvo!'; p.querySelector('.ic').textContent=err?'!':'✔'; p.classList.toggle('err',!!err); p.classList.add('on'); clearTimeout(p._t); p._t=setTimeout(()=>p.classList.remove('on'),2200); }
 const fmt=t=>(+t).toFixed(2)+'s';
 const COLORS=['#34bdf0','#5ccf5c','#f5a623','#b07cf5','#f06565','#ff9ad5','#2fc9b0','#f5d34a'];
+const MAX_JOG=8;   // igual ao jogo: no máximo 8 pessoas na sala (o juiz conta)
 
 /* ---------- Login ---------- */
 setTimeout(start,0);
@@ -454,7 +457,8 @@ function start(){
     room=s.val()||{}; const st=room.state||'lobby', ps=plist();
     $('admState').textContent=STATE_TXT[st]+((room.rounds||1)>1&&st!=='lobby'?` • Meme ${(room.round||0)+1}/${room.rounds}`:'');
     const JP=room.judge?ps.find(p=>p.id===room.judge):null;
-    $('admInfo').textContent=(st==='results'?`Mostrando ${(room.resIdx||0)+1} de ${resList().length}`:`${resList().length} jogador(es) no lobby`)+(JP?` • ⚖️ Juiz: ${JP.name}`:'')+' • ▲▼ define a ordem dos vídeos nos resultados';
+    $('admInfo').textContent=(st==='results'?`Mostrando ${(room.resIdx||0)+1} de ${resList().length}`:`${ps.length}/${MAX_JOG} na sala${ps.length>=MAX_JOG?' (cheia)':''}`)+(JP?` • ⚖️ Juiz: ${JP.name}`:'')+' • ▲▼ define a ordem dos vídeos nos resultados';
+    $('admPlayers').classList.toggle('many',ps.length>4);
     $('admPlayers').innerHTML=resList().map((p,k)=>`<div class="rank"><span class="mv" title="Ordem em que os vídeos aparecem nos resultados"><b style="color:var(--c2)">${k+1}º</b> <button class="btn w sm" onclick="mvRes('${p.id}',-1)">▲</button><button class="btn w sm" onclick="mvRes('${p.id}',1)">▼</button></span><div class="avatar" style="${p.photo?`background-image:url(${p.photo})`:''}">${p.photo?'':esc((p.name||'?')[0])}</div><b style="flex:1">${esc(p.name)}</b>${st==='lobby'?(p.ready?'<span class="tag ok">pronto</span>':'<span class="tag">esperando</span>'):''}${st==='play'?(p.done?`<span class="tag ok">Pronto ${p.score}%</span>`:'<span class="tag">gravando...</span>'):(p.score!=null?`<span class="tag">${p.score}%</span>`:'')}<button class="btn r sm" onclick="kick('${p.id}')">✕</button></div>`).join('')+(JP?`<div class="rank" style="border:2px solid #f5a623"><span class="mv"><b style="color:#c27c0e">⚖️ Juiz</b></span><div class="avatar" style="${JP.photo?`background-image:url(${JP.photo})`:''}">${JP.photo?'':esc((JP.name||'?')[0])}</div><b style="flex:1">${esc(JP.name)}</b>${st==='lobby'?(JP.ready?'<span class="tag ok">pronto</span>':'<span class="tag">esperando</span>'):''}<button class="btn r sm" onclick="kick('${JP.id}')">✕</button></div>`:'')||'<div class="muted" style="padding:10px">Ninguém no lobby ainda.</div>';
     $('admStart').disabled=st!=='lobby'; $('jumpBtn').disabled=st!=='play';
     { const sel=$('jumpWho'), cur=sel.value; sel.innerHTML='<option value="">todos</option>'+ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''); sel.value=ps.some(p=>p.id===cur)?cur:''; } $('admNext').disabled=!['results','judge','verdict'].includes(st); $('admFinal').disabled=st!=='results'; $('admRes').disabled=st!=='play'; $('admReplay').disabled=st!=='results';
@@ -487,7 +491,7 @@ $('admReplay').onclick=()=>roomRef.update({resAt:now()+2000});
 $('admNext').onclick=()=>{ const n=resList().length, i=room.resIdx||0; if(room.state==='results'&&i<n-1) roomRef.update({resIdx:i+1,resAt:now()+2000,watch:null}); else roomRef.child('endRound').set(true); };
 $('admFinal').onclick=()=>roomRef.update({state:'final',rounds:1,round:0});
 $('admLobby').onclick=()=>{ const upd={state:'lobby',recs:null,arch:null,resIdx:null,resAt:null,watch:null,watchReady:null,nextReady:null,endRound:null,jump:null,round:null,rounds:null,vote:null}; plist().forEach(p=>['done','score','partScores','recBytes','ready','clip','hist','order','proj','ld','vok','rn','rc'].forEach(k=>upd['players/'+p.id+'/'+k]=null)); roomRef.update(upd); };
-$('cfgMin').onchange=e=>db.ref('settings/minPlayers').set(Math.max(1,+e.target.value||1)).then(()=>toast('✔ Aplicado'));
+$('cfgMin').onchange=e=>{ const v=Math.min(MAX_JOG,Math.max(1,+e.target.value||1)); e.target.value=v; db.ref('settings/minPlayers').set(v).then(()=>toast('✔ Aplicado')); };
 $('cfgLobby').onchange=e=>db.ref('settings/lobbyStyle').set(e.target.value).then(()=>toast('Lobby atualizado!'));
 $('cfgRank').onchange=e=>db.ref('settings/showRanking').set(e.target.checked).then(()=>toast(e.target.checked?'🏆 Ranking ligado':'Ranking desligado'));
 $('admClear').onclick=()=>{ if(confirm('Expulsar todos e apagar todos os dados dos jogadores?')) roomRef.set({state:'lobby'}).then(()=>{ toast('🧹 Lobby limpo'); if(window.calcUsage)calcUsage(); }); };
