@@ -10,6 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="/trava.js" data-site="dublagem-party"></script>
 <style>
 :root{--c:#34bdf0;--c2:#0a8fd1;--ink:#4a5563;--card:#ffffffee;--ok:#5ccf5c;--bad:#f06565}
 *{box-sizing:border-box}
@@ -618,17 +620,13 @@ body.dark .jtab.cur{border-color:#f5a623;background:#4a3c10}
 <audio id="bgm" loop></audio>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyABXDT5J278kZixh12i88ROrMNhNyXhCNs",
-  authDomain: "dub-b3a78.firebaseapp.com",
-  databaseURL: "https://dub-b3a78-default-rtdb.firebaseio.com",
-  projectId: "dub-b3a78",
-  storageBucket: "dub-b3a78.firebasestorage.app",
-  messagingSenderId: "898560045967",
-  appId: "1:898560045967:web:11c34244631fa2082d11fa"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// FIREBASE ÚNICO (jogos-github) pela TRAVA: a configuração vem do /trava.js e tudo deste jogo fica em sites/dublagem-party/...
+if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+const _raizDb = firebase.database(), _baseDb = window.DB_ROOT || 'sites/dublagem-party';
+const _db = { ref: (p) => (!p || String(p).startsWith('.info')) ? _raizDb.ref(p) : _raizDb.ref(_baseDb + '/' + p) };
+// jogadores entram sem conta (anônimo); quem já está logado na Central continua como ADM
+{ const _a = firebase.auth(), _un = _a.onAuthStateChanged((u) => { _un(); if (!u) _a.signInAnonymously().catch(() => {}); }); }
+const db = _db;
 const $ = id => document.getElementById(id);
 const $$ = s => document.querySelectorAll(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
