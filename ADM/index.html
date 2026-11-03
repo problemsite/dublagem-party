@@ -443,7 +443,7 @@ const delMedia=id=>id&&db.ref('media/'+id).remove();
 
 /* ---------- Partida ---------- */
 const roomRef=db.ref('game'); let room={}, settings={}, projects={};
-const alive=p=>!p.seen||Date.now()+(window.srvOff||0)-p.seen<180000;
+const alive=p=>{ const t=Date.now()+(window.srvOff||0); if(p.off && t-p.off>25000) return false; return !p.seen||t-p.seen<180000; };
 const plist=()=>Object.entries(room.players||{}).map(([id,p])=>({id,...p})).filter(alive).sort((a,b)=>a.joined-b.joined);
 setInterval(()=>{ const upd={}; Object.entries(room.players||{}).forEach(([id,p])=>{ if(!alive(p)) upd['players/'+id]=null; }); if(Object.keys(upd).length) roomRef.update(upd); },10000);
 // lobby vazio com partida "presa"? limpa tudo para o próximo poder entrar
@@ -473,7 +473,7 @@ function start(){
   });
   db.ref('projects').on('value',s=>{ projects=s.val()||{}; renderProjList(); });
 }
-function wipeUpd(ids){ const upd={}; ids.forEach(id=>{ upd['players/'+id]=null; upd['recs/'+id]=null; if(room.judge===id) upd.judge=null; Object.keys(room.watchReady||{}).forEach(k=>upd[`watchReady/${k}/${id}`]=null); }); if(room.resOrder) upd.resOrder=(room.resOrder||[]).filter(x=>!ids.includes(x)); return upd; }
+function wipeUpd(ids){ const upd={}; ids.forEach(id=>{ upd['players/'+id]=null; upd['kicked/'+id]=Date.now(); upd['recs/'+id]=null; if(room.judge===id) upd.judge=null; Object.keys(room.watchReady||{}).forEach(k=>upd[`watchReady/${k}/${id}`]=null); }); if(room.resOrder) upd.resOrder=(room.resOrder||[]).filter(x=>!ids.includes(x)); return upd; }
 window.kick=id=>roomRef.update(wipeUpd([id])).then(()=>toast('Jogador removido (dados apagados)'));
 const resList=()=>{ const ps=plist().filter(p=>p.id!==room.judge), ord=room.resOrder||[]; return [...ord.map(id=>ps.find(p=>p.id===id)).filter(Boolean),...ps.filter(p=>!ord.includes(p.id))]; };
 window.mvRes=(id,d)=>{ const a=resList().map(p=>p.id), i=a.indexOf(id), j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; roomRef.child('resOrder').set(a); };
