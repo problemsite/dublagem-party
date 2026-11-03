@@ -705,14 +705,20 @@ function confetti(n=150){ const cols=COLORS; for(let i=0;i<n;i++)parts.push({x:i
 
 /* ---------- Mídia no Realtime Database ---------- */
 const mediaCache={}, mediaSizes={};
+// mídia guardada no navegador (Cache Storage): da 2ª vez abre na hora, sem baixar de novo do Firebase
+const MEDIA_CACHE='dp-media-v1';
+async function mediaDoCache(id){ try{ if(!('caches' in window))return null; const c=await caches.open(MEDIA_CACHE); const r=await c.match('/dp-media/'+id); if(!r)return null; const meta=JSON.parse(decodeURIComponent(r.headers.get('x-meta')||'%7B%7D')); const blob=await r.blob(); return {blob,url:URL.createObjectURL(blob),meta}; }catch(e){ return null; } }
+async function mediaProCache(id,blob,meta){ try{ if(!('caches' in window))return; const c=await caches.open(MEDIA_CACHE); await c.put('/dp-media/'+id,new Response(blob,{headers:{'content-type':meta.type||'application/octet-stream','x-meta':encodeURIComponent(JSON.stringify(meta))}})); }catch(e){} }
 function loadMedia(id,onProg){
   if(!mediaCache[id]) mediaCache[id]=(async()=>{
+    const salvo=await mediaDoCache(id); if(salvo){ mediaSizes[id]=salvo.blob.size; onProg&&onProg(1); return salvo; }
     const meta=(await db.ref('media/'+id+'/meta').get()).val(); if(!meta) throw new Error('mídia não encontrada');
     let done=0;
     const chunks=await Promise.all(Array.from({length:meta.n},(_,i)=>db.ref('media/'+id+'/c/'+i).get().then(s=>{done++;onProg&&onProg(done/meta.n);return s.val()})));
     const bin=atob(chunks.join('')), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-    const blob=new Blob([u8],{type:meta.type}); mediaSizes[id]=blob.size; return {blob,url:URL.createObjectURL(blob),meta};
+    const blob=new Blob([u8],{type:meta.type}); mediaSizes[id]=blob.size; mediaProCache(id,blob,meta); return {blob,url:URL.createObjectURL(blob),meta};
   })();
+  mediaCache[id].catch(()=>{ delete mediaCache[id]; });
   return mediaCache[id];
 }
 async function fixDur(v){ if(isFinite(v.duration))return; await new Promise(r=>{v.ontimeupdate=()=>{v.ontimeupdate=null;r()}; v.currentTime=1e9;}); v.currentTime=0; }
@@ -812,8 +818,14 @@ document.addEventListener('click',()=>updateMusic(document.querySelector('.scree
 /* ---------- Lobby ---------- */
 const roomRef = db.ref('game');
 let room={}, lastState='', lastCount=0, busy=false, lastJumpT=null;
+let entrando=false;
 $('joinBtn').onclick=async()=>{
+  if(entrando)return;
   if(!me.name.trim()){toast('Coloque seu nome! ✏️');$('nameIn').focus();return}
+  const jb=$('joinBtn'), txt=jb.textContent; entrando=true; jb.disabled=true; jb.textContent='⏳ Entrando…';
+  try{ await entrarLobby(); } finally{ entrando=false; jb.disabled=false; jb.textContent=txt; }
+};
+async function entrarLobby(){
   if(!micStream){ try{await startMic()}catch(e){return toast('Ative o microfone primeiro! 🎤')} }
   const g=(await roomRef.get()).val()||{}; let st=g.state||'lobby';
   // ninguém (ativo) no jogo? apaga a partida antiga para poder entrar
@@ -826,7 +838,7 @@ $('joinBtn').onclick=async()=>{
   await pRef.set({name:me.name,photo:me.photo||'',joined:Date.now(),ready:false});
   pRef.onDisconnect().remove(); joined=true; beat(); monOff();
   lastState=''; roomRef.on('value',s=>{ room=s.val()||{}; onRoom(); });
-};
+}
 $('readyBtn').onclick=()=>roomRef.child('players/'+me.id+'/ready').set(!room.players?.[me.id]?.ready);
 const STALE=180000;
 const alive=p=>!p.seen||now()-p.seen<STALE;
