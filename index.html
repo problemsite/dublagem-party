@@ -137,6 +137,7 @@ canvas.wave{width:100%;height:clamp(50px,9vh,80px);background:#f7fafc;border-rad
 #count .star{position:absolute;left:50%;top:50%;font-size:34px;pointer-events:none;animation:starfly 1s ease-out forwards}
 @keyframes starfly{from{transform:translate(-50%,-50%) scale(.3);opacity:1}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.2) rotate(180deg);opacity:0}}
 body.game .top,body.game .bottom{display:none}
+body.semRelogio .bottom{display:none}
 @keyframes cnt{from{transform:scale(3) rotate(20deg);opacity:0}60%{transform:scale(.9)}}
 .muted{color:#9aa6b2;font-size:13px}
 /* resultados */
@@ -171,6 +172,41 @@ body.game .top,body.game .bottom{display:none}
 .pbar{height:14px;border-radius:99px;background:#e4eaf0;overflow:hidden;max-width:400px;margin:10px auto}
 .pbar>div{height:100%;width:0;background:var(--c);transition:width .2s}
 .pbar.lbl{position:relative;height:24px}
+/* tela de carregamento (estilo LoL): todos aparecem e o jogo só começa quando todos carregaram */
+#s-load.on{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3vh,30px);padding:24px;background:radial-gradient(ellipse at 50% 35%,#ffffff 0%,#e3f4ff 45%,#bfe4fb 100%)}
+body.dark #s-load.on{background:radial-gradient(ellipse at 50% 35%,#1d3550 0%,#122236 55%,#0a1522 100%)}
+.ld-top{text-align:center}
+.ld-top small{display:block;font-size:clamp(13px,1.6vw,17px);font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:var(--c2);opacity:.85}
+.ld-top h2{margin:6px 0 0;font-size:clamp(26px,4vw,46px);line-height:1.1;color:var(--ink)}
+.ldwho{--cw:clamp(160px,17vw,240px);--g:clamp(12px,1.8vw,22px);display:flex;flex-wrap:wrap;justify-content:center;gap:calc(var(--g) + 8px) var(--g);width:calc(var(--cols,4)*(var(--cw) + var(--g)));max-width:100%}
+.ldwho.many{--cw:clamp(140px,14.5vw,210px)}
+.ldwho.many .ldp{padding:16px 12px 12px;gap:7px}
+.ldwho.many .ldp .avatar{width:clamp(56px,min(8vw,9vh),120px);height:clamp(56px,min(8vw,9vh),120px)}
+.ldp{width:var(--cw)}
+.ldp{--pc:var(--c);position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 14px 16px;border-radius:24px;background:linear-gradient(170deg,color-mix(in srgb,var(--pc) 22%,#fff) 0%,#fff 60%);border:3px solid color-mix(in srgb,var(--pc) 45%,#fff);box-shadow:0 8px 0 color-mix(in srgb,var(--pc) 35%,#cfd9e3),0 16px 34px #0002;transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s,border-color .35s;min-width:0}
+body.dark .ldp{background:linear-gradient(170deg,color-mix(in srgb,var(--pc) 30%,#16263a) 0%,#16263a 65%);border-color:color-mix(in srgb,var(--pc) 50%,#16263a);box-shadow:0 8px 0 #0b1118,0 16px 34px #0007}
+.ldp .avatar{width:clamp(60px,min(10vw,13vh),140px);height:clamp(60px,min(10vw,13vh),140px);font-size:clamp(26px,min(4vw,5vh),54px);border:4px solid #fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--pc) 60%,#fff)}
+.ldp b{font-size:clamp(15px,1.6vw,19px);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ldbar{width:100%;height:20px;border-radius:99px;background:#dfe7ef;overflow:hidden;box-shadow:inset 0 2px 3px #0002}
+body.dark .ldbar{background:#0d1824}
+.ldbar>i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--pc),color-mix(in srgb,var(--pc) 60%,#fff));transition:width .35s ease}
+.ldv{height:clamp(28px,3.4vw,38px);display:flex;align-items:center;justify-content:center;white-space:nowrap;font-size:clamp(20px,2.4vw,28px);font-weight:900;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.ldp.ok{transform:translateY(-6px);border-color:var(--ok);box-shadow:0 8px 0 #3fa83f,0 0 0 4px #5ccf5c55,0 18px 36px #0002}
+.ldp.ok .ldbar>i{background:var(--ok)}
+.ldp.ok .ldv{color:var(--ok);font-size:clamp(15px,1.8vw,21px);letter-spacing:.06em}
+.ldp.eu{transform:scale(1.08);z-index:1;border-width:4px;border-color:var(--c);box-shadow:0 8px 0 #1d8fc4,0 0 0 6px #34bdf044,0 0 40px #34bdf077,0 18px 40px #0002}
+.ldp.eu.ok{transform:scale(1.08) translateY(-6px);border-color:var(--ok);box-shadow:0 8px 0 #3fa83f,0 0 0 6px #5ccf5c55,0 0 40px #5ccf5c66,0 18px 40px #0002}
+.ldp.eu::after{content:'VOCÊ';position:absolute;top:-14px;left:50%;transform:translateX(-50%);padding:4px 14px;border-radius:99px;background:var(--c);color:#fff;font-size:13px;font-weight:900;letter-spacing:.1em;box-shadow:0 3px 0 #1d8fc4}
+.ldp.eu.ok::after{background:var(--ok);box-shadow:0 3px 0 #3fa83f}
+.ldall{width:min(900px,86vw);display:flex;flex-direction:column;align-items:center;gap:10px}
+.ldall .ldbar{position:relative;height:clamp(34px,5vh,46px);border-radius:99px;box-shadow:inset 0 3px 5px #0002,0 4px 0 #cdd8e2}
+.ldall .ldbar>i{background:linear-gradient(90deg,var(--c),#7fdcff,var(--c));background-size:200% 100%;animation:ldbrilho 1.6s linear infinite}
+@keyframes ldbrilho{to{background-position:-200% 0}}
+.ldall .ldbar>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,2.4vw,26px);font-weight:900;color:#0b3550;text-shadow:0 1px 0 #fff9;font-variant-numeric:tabular-nums}
+body.dark .ldall .ldbar>span{color:#fff;text-shadow:0 1px 3px #000a}
+.ldall.ok .ldbar>i{background:var(--ok);animation:none}
+#loadMsg{font-size:clamp(15px,1.8vw,20px);font-weight:900;color:#6c7d8e}
+body.dark #loadMsg{color:#9fb3c6}
 .pbar>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#0b3550;text-shadow:0 1px 0 #fff9;white-space:nowrap;pointer-events:none}
 body.dark .pbar>span{color:#e8f6ff;text-shadow:0 1px 2px #000a}
 #dbg{position:fixed;left:50%;transform:translateX(-50%);top:70px;z-index:80;background:#1e2833e8;color:#9ff0a8;font:12px/1.5 monospace;padding:10px 14px;border-radius:14px;max-width:360px;display:none;white-space:pre-wrap;pointer-events:none}
@@ -510,7 +546,10 @@ body.dark .jtab.cur{border-color:#f5a623;background:#4a3c10}
 </section>
 
 <section class="screen" id="s-load">
-  <div class="card center"><h2>Preparando o vídeo</h2><div class="loader"></div><div class="pbar"><div id="loadBar"></div></div></div>
+  <div class="ld-top"><small id="loadSub">Carregando</small><h2 id="loadName">Preparando o vídeo</h2></div>
+  <div class="ldwho" id="loadWho"></div>
+  <div class="ldall" id="loadAll"><div class="ldbar"><i id="loadAllBar"></i><span id="loadAllPct">0%</span></div><div id="loadMsg">Carregando…</div></div>
+  <div style="display:none"><div id="loadBar"></div></div>
 </section>
 
 <section class="screen fill card" id="s-rec">
@@ -652,6 +691,7 @@ const _db = { ref: (p) => (!p || String(p).startsWith('.info')) ? _raizDb.ref(p)
 { const _a = firebase.auth(), _un = _a.onAuthStateChanged((u) => { _un(); if (!u) _a.signInAnonymously().catch(() => {}); }); }
 const db = _db;
 const $ = id => document.getElementById(id);
+document.body.classList.add('semRelogio');   // começa sem o relógio (o ADM pode ligar)
 const $$ = s => document.querySelectorAll(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -807,6 +847,7 @@ $('micClose').onclick=()=>{ $('micModal').classList.remove('on'); $('micHome').a
 let musicLoaded='';
 db.ref('settings').on('value',async s=>{
   settings=s.val()||{}; const b=$('bgm'); applyVol();
+  document.body.classList.toggle('semRelogio',settings.showClock!==true);   // relógio de baixo: escondido, a não ser que o ADM ligue
   if(settings.musicId && settings.musicId!==musicLoaded){ musicLoaded=settings.musicId; try{ b.src=(await loadMedia(settings.musicId)).url; updateMusic(document.querySelector('.screen.on').id);}catch(e){} }
   if(!settings.musicId){ b.pause(); b.removeAttribute('src'); musicLoaded=''; }
   updDebug();
@@ -1095,16 +1136,31 @@ let proj, media, order=[], cur=0, recs={}, oFeats={}, recorder, recTimer, liveEn
 async function prepareAndStart(){
   lastJumpT=room.jump?.t??null;
   monOff();
-  show('s-load'); $('loadBar').style.width='0%'; pvok=null; pset({ld:0});
+  show('s-load'); $('loadBar').style.width='0%'; pvok=null; pset({ld:0}); meuLd=0; pintaLoad();
+  const ldTk=setInterval(pintaLoad,250);
   const myP=room.players[me.id]; proj=(await db.ref('projects/'+myP.proj).get()).val(); order=myP.order||[];
-  let lastLd=0; media=await loadMedia(proj.mediaId,p=>{ $('loadBar').style.width=(p*100)+'%'; const v=Math.min(95,Math.floor(p*10)*10); if(v!==lastLd){ lastLd=v; pset({ld:v}); } });
-  await buildPool(); pset({ld:100});
+  $('loadSub').textContent=(room.rounds||1)>1?`Meme ${(room.round||0)+1} de ${room.rounds}`:'Carregando o meme'; $('loadName').textContent=proj?.name||'Preparando o vídeo';
+  let lastLd=0; media=await loadMedia(proj.mediaId,p=>{ meuLd=Math.min(90,Math.round(p*90)); const v=Math.min(90,Math.floor(p*10)*10); if(v!==lastLd){ lastLd=v; pset({ld:v}); } }); meuLd=90; pset({ld:90});
+  await buildPool(); meuLd=95; pset({ld:95});
   oFeats={};
   try{ const o=await origAudio(proj.mediaId); proj.parts.forEach((p,i)=>{ oFeats[i]=feats(o.data,o.sr,+p.start,+p.end); oFine[i]=fine(o.data,o.sr,+p.start,+p.end); }); }catch(e){ console.warn(e); }
+  pset({ld:100}); meuLd=100;
   recs={}; cur=0;
+  await esperaTodos(); clearInterval(ldTk);
+  if(room.state!=='play') return;
   await countdown();
   show('s-rec'); $('recTitle').textContent=((room.rounds||1)>1?`🎬 Meme ${(room.round||0)+1}/${room.rounds} • `:'🎬 ')+proj.name; applyVol(); selectPart(0); autoPlayClip();
 }
+// só começa quando TODOS (menos o juiz) terminaram de carregar; mostra quem já está pronto
+let meuLd=0;
+function pintaLoad(){ const ps=compList(), box=$('loadWho'), ldOf=p=>p.id===me.id?Math.max(meuLd,Math.min(100,p.ld||0)):Math.min(100,p.ld||0), ok=ps.filter(p=>ldOf(p)>=100).length;
+  const sig=ps.map(p=>p.id).join(',');
+  if(box._sig!==sig){ box._sig=sig; box.innerHTML=ps.map(p=>`<div class="ldp ${p.id===me.id?'eu':''}" data-pid="${p.id}" style="--pc:${pcol(p.id)}"><div class="avatar" style="${avStyle(p)}">${avTxt(p)}</div><b>${esc(p.name||'?')}</b><div class="ldbar"><i></i></div><span class="ldv"></span></div>`).join(''); fitGrid(box,ps.length,{plan:k=>k<=5?k:Math.ceil(k/2),min:140,gap:16,many:5}); }
+  ps.forEach(p=>{ const el=box.querySelector(`[data-pid="${p.id}"]`); if(!el)return; const v=ldOf(p); el.classList.toggle('ok',v>=100); el.querySelector('.ldbar>i').style.width=v+'%'; const t=v>=100?'✔ PRONTO':v+'%'; const lv=el.querySelector('.ldv'); if(lv.textContent!==t) lv.textContent=t; });
+  const geral=ps.length?Math.round(ps.reduce((a,p)=>a+ldOf(p),0)/ps.length):0;
+  $('loadAllBar').style.width=geral+'%'; $('loadAllPct').textContent=geral+'%'; $('loadAll').classList.toggle('ok',ok>=ps.length&&ps.length>0);
+  $('loadMsg').textContent=ok<ps.length?`Esperando todos carregarem… ${ok}/${ps.length} prontos`:'Todos prontos! Começando…'; return ok>=ps.length; }
+function esperaTodos(){ return new Promise(res=>{ const t0=Date.now(); const tk=()=>{ if(room.state!=='play'){ clearInterval(iv); return res(); } const pronto=pintaLoad(); if(pronto||Date.now()-t0>120000){ clearInterval(iv); setTimeout(res,pronto?400:0); } }; const iv=setInterval(tk,250); tk(); }); }
 /* ---- um vídeo pronto por clipe (já parado no início dele) = começa na hora ---- */
 var pool={}, poolReady={};
 function seekTo(v,t){ return new Promise(r=>{ if(Math.abs(v.currentTime-t)<0.02&&!v.seeking) return r(); let ok=false; const on=()=>{ if(ok)return; ok=true; v.removeEventListener('seeked',on); r(); }; v.addEventListener('seeked',on); setTimeout(on,5000); v.currentTime=t; }); }
