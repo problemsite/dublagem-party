@@ -290,6 +290,7 @@ body:not(.dark) .edst{background:linear-gradient(#ffffff,#e3f6fe)}
       <div class="muted">Com 2, o jogo só começa quando tiver 2 pessoas no lobby e todas clicarem em "Começar". A sala aceita até 8 pessoas (o juiz conta).</div>
       <label>Estilo do lobby</label>
       <select id="cfgLobby"><option value="mii">🧍 Bonequinhos andando (estilo Mii)</option><option value="cards">🃏 Cartões (normal)</option></select>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cfgClock" style="width:auto"> 🕒 Esconder o relógio da parte de baixo do site</label>
       <label>Qualidade das gravações dos jogadores</label>
       <select id="cfgKbps"><option value="24">Leve — 24 kbps (menor uso)</option><option value="48">Normal — 48 kbps</option><option value="96">Alta — 96 kbps</option></select>
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cfgDebug" style="width:auto"> 🐞 Modo DEBUG (mostra informações técnicas na tela dos jogadores)</label>
@@ -466,7 +467,7 @@ function start(){
   db.ref('settings').on('value',async s=>{
     settings=s.val()||{};
     $('cfgSame').value=settings.same||'same'; if(document.activeElement!==$('cfgVol')) $('cfgVol').value=settings.vol??.4; $('volTxt').textContent=Math.round(($('cfgVol').value)*100)+'%';
-    $('cfgProj').value=settings.projId||''; $('cfgKbps').value=String(settings.recKbps||48); $('cfgDebug').checked=!!settings.debug; $('cfgRank').checked=settings.showRanking!==false; $('cfgLobby').value=settings.lobbyStyle||'mii'; if(document.activeElement!==$('cfgMin')) $('cfgMin').value=settings.minPlayers||1;
+    $('cfgProj').value=settings.projId||''; $('cfgKbps').value=String(settings.recKbps||48); $('cfgDebug').checked=!!settings.debug; $('cfgRank').checked=settings.showRanking!==false; $('cfgClock').checked=settings.showClock!==true; $('cfgLobby').value=settings.lobbyStyle||'mii'; if(document.activeElement!==$('cfgMin')) $('cfgMin').value=settings.minPlayers||1;
     if(settings.musicId){ const m=(await db.ref('media/'+settings.musicId+'/meta').get()).val(); $('musicName').textContent='🎵 '+(m?.name||'música'); loadMedia(settings.musicId).then(x=>{$('musicPrev').src=x.url;$('musicPrev').style.display='';}); }
     else { $('musicName').textContent='Nenhuma'; $('musicPrev').style.display='none'; }
     renderPlaylist();
@@ -493,6 +494,7 @@ $('admFinal').onclick=()=>roomRef.update({state:'final',rounds:1,round:0});
 $('admLobby').onclick=()=>{ const upd={state:'lobby',recs:null,arch:null,resIdx:null,resAt:null,watch:null,watchReady:null,nextReady:null,endRound:null,jump:null,round:null,rounds:null,vote:null}; plist().forEach(p=>['done','score','partScores','recBytes','ready','clip','hist','order','proj','ld','vok','rn','rc'].forEach(k=>upd['players/'+p.id+'/'+k]=null)); roomRef.update(upd); };
 $('cfgMin').onchange=e=>{ const v=Math.min(MAX_JOG,Math.max(1,+e.target.value||1)); e.target.value=v; db.ref('settings/minPlayers').set(v).then(()=>toast('✔ Aplicado')); };
 $('cfgLobby').onchange=e=>db.ref('settings/lobbyStyle').set(e.target.value).then(()=>toast('Lobby atualizado!'));
+$('cfgClock').onchange=e=>db.ref('settings/showClock').set(!e.target.checked).then(()=>toast(e.target.checked?'🕒 Relógio escondido':'🕒 Relógio aparecendo'));
 $('cfgRank').onchange=e=>db.ref('settings/showRanking').set(e.target.checked).then(()=>toast(e.target.checked?'🏆 Ranking ligado':'Ranking desligado'));
 $('admClear').onclick=()=>{ if(confirm('Expulsar todos e apagar todos os dados dos jogadores?')) roomRef.set({state:'lobby'}).then(()=>{ toast('🧹 Lobby limpo'); if(window.calcUsage)calcUsage(); }); };
 
