@@ -835,13 +835,18 @@ async function entrarLobby(){
   const dentro=Object.entries(g.players||{}).filter(([id,p])=>id!==me.id&&(!p.seen||now()-p.seen<STALE)).length;
   if(dentro>=MAX_JOG) return toast(`😅 A sala está cheia (${MAX_JOG} jogadores). Espere alguém sair!`);
   const pRef=roomRef.child('players/'+me.id);
+  roomRef.child('kicked/'+me.id).remove().catch(()=>{});
   await pRef.set({name:me.name,photo:me.photo||'',joined:Date.now(),ready:false});
-  pRef.onDisconnect().remove(); joined=true; beat(); monOff();
+  armaQueda(); joined=true; beat(); monOff();
   lastState=''; roomRef.on('value',s=>{ room=s.val()||{}; onRoom(); });
 }
 $('readyBtn').onclick=()=>roomRef.child('players/'+me.id+'/ready').set(!room.players?.[me.id]?.ready);
-const STALE=180000;
-const alive=p=>!p.seen||now()-p.seen<STALE;
+const STALE=180000, QUEDA=25000;
+// caiu a conexão: o servidor só marca "off" (não apaga). Volta em até 25 s = continua no jogo como se nada fosse
+const alive=p=>{ const t=now(); if(p.off && t-p.off>QUEDA) return false; return !p.seen||t-p.seen<STALE; };
+function armaQueda(){ roomRef.child('players/'+me.id).onDisconnect().update({off:firebase.database.ServerValue.TIMESTAMP}); }
+let meuNo=null;
+db.ref('.info/connected').on('value',s=>{ if(s.val() && joined){ armaQueda(); if(room.players?.[me.id]) roomRef.child('players/'+me.id).update({off:null,seen:now()}).catch(()=>{}); } });
 const plist=()=>Object.entries(room.players||{}).map(([id,p])=>({id,...p})).filter(alive).sort((a,b)=>a.joined-b.joined);
 let joined=false;
 function beat(){ if(joined && room.players?.[me.id]) roomRef.child('players/'+me.id).update({seen:now()}).catch(()=>{}); }
@@ -881,6 +886,14 @@ function keyedCards(box,ps,extraFn){
 }
 function plCard(p,extra=''){ return `<div class="pl ${extra.includes('ok')?'ready':''}"><div class="avatar" style="${avStyle(p)}">${avTxt(p)}</div><b>${esc(p.name)}</b>${extra}</div>`; }
 function onRoom(){
+  const mine=room.players?.[me.id];
+  if(mine && mine.name && mine.joined) meuNo=JSON.parse(JSON.stringify(mine));
+  // meu jogador sumiu ou ficou pela metade sem ter saído nem ser expulso (queda de conexão): volta como estava
+  if(joined && meuNo && (!mine || !mine.name || !mine.joined) && !room.kicked?.[me.id]){
+    const fix=Object.assign({},mine?{}:meuNo,mine||{},{name:me.name,photo:me.photo||'',joined:meuNo.joined,off:null,seen:now()});
+    if(!fix.proj&&meuNo.proj){ fix.proj=meuNo.proj; fix.order=meuNo.order; }
+    roomRef.child('players/'+me.id).update(fix).catch(()=>{}); armaQueda(); return;
+  }
   if(!room.players?.[me.id]){ if(joined){ joined=false; roomRef.off(); stopAll(); show('s-home'); toast('Você saiu do lobby'); } return; }
   const ps=plist(), st=room.state||'lobby';
   // dois entraram ao mesmo tempo e passou de 8? quem chegou por último sai
